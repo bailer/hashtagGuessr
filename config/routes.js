@@ -33,7 +33,8 @@ module.exports.routes = {
   ***************************************************************************/
 
   '/': 'GameController.startGame',
-  '/socket': 'GameController.socketSetup'
+  '/socket': 'GameController.socketSetup',
+  '/inLobby': 'GameController.inLobby'
 
   /***************************************************************************
   *                                                                          *

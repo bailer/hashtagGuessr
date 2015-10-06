@@ -12,12 +12,17 @@
     });
   },
 
+  inLobby: function(req, res) {
+    sails.sockets.join(req.socket, 'lobby');
+    console.log(sails.sockets.id(req.socket) + " joined lobby");
+  },
+
   socketSetup: function(req, res) {
     var socket = sails.sockets.id(req.socket);
     console.log(socket);
-    setTimeout(function () {
-      sails.sockets.emit(socket,'boom', "blasted!");
-    }, 3000);
+    // setTimeout(function () {
+    //   sails.sockets.emit(socket,'boom', "blasted!");
+    // }, 3000);
     return res.ok('My socket ID is: '+ socket);
   }
 };

@@ -1,3 +1,4 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 <script type="text/javascript" src="js/dependencies/sails.io.js"></script>
 <script type="text/javascript">
 
@@ -23,13 +24,42 @@
       // (just for convenience, and to maintain familiar usage, a la `JQuery.get()`)
     });
     io.socket.on('boom', function(data) {
-        document.getElementById("ans").innerHTML = data;
+      document.getElementById("ans").innerHTML = data;
     });
+    var gameRoomList = $('<ul/>').addClass('gameRoomList');
+    io.socket.get('/gameroom', function serverResponded(body, JWR) {
+      var gameRoomsJSON = body;
+      $('.gameRooms').html(gameRoomList);
+      $.each(gameRoomsJSON, function(key, item) {
+        addGameRoom(item);
+        // var gameRoomListItem = $('<li/>').addClass('gameRoomListItem').attr('id', item.id).appendTo(gameRoomList);
+        // var gameRooms = $('<a/>').addClass('gameRoomListContent').text(item.name).appendTo(gameRoomListItem);
+      });
+      console.log(gameRoomList);
+    });
+    io.socket.get('/inLobby', function serverResponded(body, JWR) {
+    });
+    io.socket.on('addGameRoom', function(data) {
+      addGameRoom(data);
+    });
+    io.socket.on('removeGameRoom', function(data) {
+      removeGameRoom(data);
+    });
+    function addGameRoom(gameRoom) {
+      var gameRoomListItem = $('<li/>').addClass('gameRoomListItem').attr('id', gameRoom.id).appendTo(gameRoomList);
+      var gameRooms = $('<a/>').addClass('gameRoomListContent').text(gameRoom.name).attr('href', '/gameroom/'+gameRoom.id).appendTo(gameRoomListItem);
+    };
+    function removeGameRoom(gameRooms) {
+      $.each(gameRooms, function(key, item) {
+        $("#"+item.id).remove();
+      });
+    }
     // var ans = "hej";
     // io.socket.on('ans', data) {
     //   document.getElementById("ans").innerHTML = data.msg;
     // };
-</script>
+  </script>
 
-<%= test%>
-<p id="ans">banan<p>
+  <%= test%>
+  <p id="ans">banan<p>
+    <p class="gameRooms"></p>
