@@ -6,6 +6,9 @@
  */
 
 module.exports = {
-	
+  serveGameRoom: function(req, res) {
+    console.log(req.id + "connected to gameroom " + req.param('id'));
+    res.view('gameroom');
+  }
 };
 

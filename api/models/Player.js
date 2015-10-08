@@ -13,7 +13,10 @@ module.exports = {
       required: true
     },
     guess: {
-      model: 'PlayerGuess'
+      type: 'string'
+    },
+    inGameRoom: {
+      model: 'GameRoom'
     }
   }
 };

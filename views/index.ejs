@@ -1,44 +1,21 @@
-<div ng-app="hashtagGuessrApp" ng-controller="LobbyController">
-  <script type="text/javascript">
-    // var gameRoomList = $('<ul/>').addClass('gameRoomList');
-    // io.socket.get('/gameroom', function serverResponded(body, JWR) {
-    //   var gameRoomsJSON = body;
-    //   $('.gameRooms').html(gameRoomList);
-    //   $.each(gameRoomsJSON, function(key, item) {
-    //     addGameRoom(item);
-    //   });
-    //   console.log(gameRoomList);
-    // });
-    // io.socket.on('gameroom', function(obj) {
-    //   if (obj.verb == "created") {
-    //     addGameRoom(obj.data);
-    //   } else if (obj.verb = "destroyed") {
-    //     removeGameRoom(obj.id);
-    //   }
-    // })
-    // function addGameRoom(gameRoom) {
-    //   var gameRoomListItem = $('<li/>').addClass('gameRoomListItem').attr('id', gameRoom.id).appendTo(gameRoomList);
-    //   var gameRooms = $('<a/>').addClass('gameRoomListContent').text(gameRoom.name).attr('href', '/gameroom/'+gameRoom.id).appendTo(gameRoomListItem);
-    // };
-    // function removeGameRoom(gameRoomId) {
-    //   $("#"+gameRoomId).remove();
-    // }
-  </script>
+<div ng-controller="LobbyCtrl" ng-cloak>
   <div class="col-md-12">
-    <ul class="gameRoomlist">
+    <ul class="gameRoomlist" ng-model="gameRoomList">
       <li class="gameRoomListItem" ng-repeat="gameRoom in gameRoomList">
-        <a href="/gameroom/{{gameRoom.id}}">{{gameRoom.name}}</a>
+        <a href="/game/{{gameRoom.id}}">{{gameRoom.name}}</a>
       </li>
     </ul>
   </div>
+
+  <!-- Form for creating new game room  -->
   <div class="navbar navbar-inverse navbar-fixed-bottom" >
     <div class="col-lg-12">
-      
       <form class="formGameRoom">
         <div class="col-lg-4 col-md-3">
           <!-- Game Room -->
-          <input type="text" ng-model = "newGameRoomName" ng-model-instant class="form-control" placeholder="Game room 12">
+          <input type="text" ng-model="newGameRoomName" class="form-control">
         </div>
+        <input type="checkbox" ng-model="joinRoomAtCreate">
         <button class="btn btn-default col-lg-2 col-md-2" ng-click="createNewGameRoom()">Send</button>  
       </form>
       

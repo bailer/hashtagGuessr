@@ -1,0 +1,17 @@
+<div ng-controller="GameRoomCtrl" ng-cloak>
+  <div class="row">
+    <form ng-hide="hasUsername">
+      <input type="text" ng-model="username">
+      <!-- <input type="text" ng-model="guess"> -->
+      <button class="btn btn-default" ng-click="setUsername()">Save</button>
+    </form>
+    <div ng-show="hasUsername">{{username}}</div>
+  </div>
+  <div class="row" ng-show="gameRoom">
+    <div class="col-lg-6 col-md-6 col-sm-12 player1">
+      {{gameRoom.name}} {{gameRoom.players.length}} players
+    </div>
+    <div class="col-lg-6 col-md-6 col-sm-12 player2">
+    </div>
+  </div>
+</div>

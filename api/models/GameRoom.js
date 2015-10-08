@@ -17,7 +17,7 @@ module.exports = {
       type: 'string'
     },
     players: {
-      collection: 'PlayerGuess',
+      collection: 'Player',
       via: 'inGameRoom'
     }
   },

@@ -6,10 +6,6 @@
  */
 
  module.exports = {
-  startGame: function(req, res) {
-    return res.render('index', { 
-      test: 'Game time!' 
-    });
-  }
+  
 };
 

@@ -37,9 +37,9 @@
     <!--STYLES END-->
   </head>
 
-  <body>
+  <body ng-app="hGApp">
     
-
+    <%- body %>
 
 
     <!--
@@ -95,11 +95,12 @@
     <script src="/js/dependencies/sails.io.js"></script>
     <script src="/js/dependencies/jquery-1.11.3.min.js"></script>
     <script src="/js/dependencies/angular.min.js"></script>
+    <script src="/js/dependencies/angular-sails.min.js"></script>
+    <script src="/js/dependencies/angular-cookies.min.js"></script>
     <script src="/js/dependencies/bootstrap.js"></script>
     <script src="/js/dependencies/bootstrap.min.js"></script>
-    <script src="/js/LobbyController.js"></script>
+    <script src="/js/dependencies/ejs.min.js"></script>
+    <script src="/js/angular/app.js"></script>
     <!--SCRIPTS END-->
-
-    <%- body %>
   </body>
 </html>
