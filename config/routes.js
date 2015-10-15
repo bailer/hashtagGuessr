@@ -35,11 +35,11 @@ module.exports.routes = {
   '/': {
     view: 'index'
   },
-  // '/game/:id' : {
-  //   view: 'gameroom'
-  // },
-  '/socket': 'TestController.socket',
-  '/game/:id' : 'GameRoomController.serveGameRoom'
+  '/game/:id' : {
+    view: 'gameroom'
+  },
+  // '/socket': 'TestController.socket',
+  '/game/init/:id' : 'GameRoomController.initGameRoom'
 
   /***************************************************************************
   *                                                                          *

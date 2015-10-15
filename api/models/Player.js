@@ -10,13 +10,15 @@ module.exports = {
   attributes: {
     name: {
       type: 'string',
-      required: true
     },
     guess: {
       type: 'string'
     },
     inGameRoom: {
       model: 'GameRoom'
+    },
+    socketId: {
+      type: 'string'
     }
   }
 };
