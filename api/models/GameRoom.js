@@ -23,6 +23,10 @@ module.exports = {
     gameTime: {
       type: 'integer',
       defaultsTo: 60000
+    },
+    active: {
+      type: 'boolean',
+      defaultsTo: 'false'
     }
   },
 

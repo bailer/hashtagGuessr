@@ -9,7 +9,8 @@ module.exports = {
   serveGameRoom: function(req, res) {
     gameRoomId = req.param('id');
     GameRoom.findOne(gameRoomId).exec(function (err, found) {
-      if (found) {
+      // will have to add support for reconnection here
+      if (found && !found.active) {
         console.log("served gameroom " + gameRoomId);
         return res.view('gameroom');
       } else {
