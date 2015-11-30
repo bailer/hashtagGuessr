@@ -19,6 +19,10 @@ module.exports = {
     players: {
       collection: 'Player',
       via: 'inGameRoom'
+    },
+    gameTime: {
+      type: 'integer',
+      defaultsTo: 60000
     }
   },
 

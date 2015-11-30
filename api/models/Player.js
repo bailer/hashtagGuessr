@@ -12,13 +12,18 @@ module.exports = {
       type: 'string',
     },
     guess: {
-      type: 'string'
+      type: 'string',
+      defaultsTo: '#saturday'
     },
     inGameRoom: {
       model: 'GameRoom'
     },
     socketId: {
       type: 'string'
+    },
+    score: {
+      type: 'integer',
+      defaultsTo: 0
     }
   }
 };

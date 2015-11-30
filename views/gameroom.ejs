@@ -7,9 +7,17 @@
         <button class="btn btn-default" ng-click="joinRoom()">Save</button>
       </form>
       <div ng-show="hasUsername">{{username}}</div>
+      <button class="btn btn-default" ng-click="startGame()">Start Game</button>
     </div>
   </div>
-  {{gameRoom.name}} {{gameRoom.players.length}} players
+  {{gameRoom.name}} {{gameRoom.players.length}} players <br>
+  <div ng-show="waitingToStart">
+    {{countdownToStart}}
+  </div>
+  <div ng-show="gameActive">
+    {{player.score}} <br>
+    {{tweetText}}
+  </div>
   <div class="row" ng-show="gameRoom">
     <div class="col-lg-6 col-md-6 col-sm-12 player1">
     </div>
