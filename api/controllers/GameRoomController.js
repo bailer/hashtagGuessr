@@ -7,8 +7,15 @@
 
 module.exports = {
   serveGameRoom: function(req, res) {
-    console.log(req.id + "connected to gameroom " + req.param('id'));
-    return res.view('gameroom');
+    gameRoomId = req.param('id');
+    GameRoom.findOne(gameRoomId).exec(function (err, found) {
+      if (found) {
+        console.log("served gameroom " + gameRoomId);
+        return res.view('gameroom');
+      } else {
+          res.notFound();
+      }
+    });
   },
 
   // socket init

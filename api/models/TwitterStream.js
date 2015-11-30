@@ -94,7 +94,7 @@ module.exports = {
     });
   },
 
-  track: function(gameRoom, res) {
+  track: function(gameRoom) {
     if (!timerObject) {
       // timerObject = setTimeout(timerFunc, timerInterval);
       // latestStartTime = Date.now();

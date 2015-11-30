@@ -13,7 +13,7 @@ module.exports = {
     },
     guess: {
       type: 'string',
-      defaultsTo: '#saturday'
+      defaultsTo: '#nohashtag'
     },
     inGameRoom: {
       model: 'GameRoom'
