@@ -12,7 +12,7 @@ angular.module('hGApp', ['ngSails', 'ngCookies'])
   // function declarations
 
   $scope.getGameRooms = function() {
-    $sails.get('/gameroom').success(function (response) {
+    $sails.get('/gameroom/getOpenGameRooms').success(function (response) {
       $scope.gameRoomList = response;
     });
   };
