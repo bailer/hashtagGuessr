@@ -19,6 +19,12 @@ module.exports = {
     });
   },
 
+  getOpenGameRooms: function(req, res) {
+    GameRoom.find({active: false}).populateAll().exec(function findCB(err, found) {
+      res.json(found);
+    })
+  },
+
   // socket init
   initGameRoom: function (req, res) {
     gameRoomId = req.param('id');
@@ -57,6 +63,13 @@ module.exports = {
           sails.sockets.join(o.socketId, socketRoom);
           sails.sockets.join(o.socketId, "waitingGameRooms");
           players.push(o);
+          GameRoom.update(found.id,{active: true}).exec(function afterwards(err, updated) {
+            if (err) {
+              console.log("couldn't set gameroom " + found.id + "to active");
+            } else {
+              console.log("updated gameroom " + found.id);
+            }
+          });
         });
         var toSend = TwitterStream.track(found);
         return res.json(toSend);
