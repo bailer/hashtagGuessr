@@ -65,8 +65,8 @@ var timerFunc = function () {
       // do remove hashtags timer
       removesToExecute.forEach(function (o, i, a) {
         setTimeout(o.func, o.gameTime, o.hashtags, o.gameRoomId);
-        removesToExecute.splice(i, 1);
       });
+      removesToExecute = []
       timerObject = setTimeout(timerFunc, timerInterval);
     });
     currentStream.on('warning', function (warning) {
@@ -102,9 +102,9 @@ module.exports = {
     var hashtags = [];
     gameRoom.players.forEach(function (o, i, a) {
       console.log("Adding hashtag " + o.guess + " for gameroom " + gameRoom.id);  
-      var currentGameRooms = waitingHashtags[o.guess];
-      if (currentGameRooms) {
-        currentGameRooms.push(gameRoom.id);
+      var currentGameRoomsForGuess = waitingHashtags[o.guess];
+      if (currentGameRoomsForGuess) {
+        currentGameRoomsForGuess.push(gameRoom.id);
       } else {
         waitingHashtags[o.guess] = [gameRoom.id];
       }
