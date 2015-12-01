@@ -45,7 +45,14 @@ angular.module('hGApp', ['ngSails', 'ngCookies'])
         }
       });
     } else if (message.verb == "updated") {
-      console.log("mupp");
+      if (message.data.active == true) {
+        angular.forEach($scope.gameRoomList, function(obj, index) {
+          if (message.id === obj.id) {
+            $scope.gameRoomList.splice(index, 1);
+            return;
+          }
+        });
+      }
     }
   });
 

@@ -21,6 +21,9 @@ module.exports = {
 
   getOpenGameRooms: function(req, res) {
     GameRoom.find({active: false}).populateAll().exec(function findCB(err, found) {
+      if (req.isSocket) {
+        GameRoom.watch(req);
+      }
       res.json(found);
     })
   },
@@ -67,6 +70,7 @@ module.exports = {
             if (err) {
               console.log("couldn't set gameroom " + found.id + "to active");
             } else {
+              GameRoom.publishUpdate(found.id,{active: true});
               console.log("updated gameroom " + found.id);
             }
           });
