@@ -86,11 +86,12 @@ module.exports = {
 
   init: function() {
     var Twit = require('twit');
+    var twitterKeys = sails.config.twitterKeys;
     TwitterObject = new Twit({
-      consumer_key: 'kdeBpqxzD6nAEZpFHeHHuCnsP',
-      consumer_secret: 'ehHuPwiXMILp0Dn1fZGuLMHxXeJxoxk7L9LvbKdh0PnmcIqdZW',
-      access_token: '123103860-8vgX1aD3xAS4UsUsVqIZoL8KqJGrwPeeeOf3ZJOd',
-      access_token_secret: 'mpZ9trTtgzuuAA6MCw4AJOMCwGFdWoerzyWNp1V03fDEx'
+      consumer_key: twitterKeys.consumer_key,
+      consumer_secret: twitterKeys.consumer_secret,
+      access_token: twitterKeys.access_token,
+      access_token_secret: twitterKeys.access_token_secret
     });
   },
 
