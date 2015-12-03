@@ -5,7 +5,7 @@ angular.module('hGApp', ['ngSails', 'ngCookies'])
 
   $scope.predicate = '-id';
   $scope.reverse = false;
-  $scope.gameRoomList =[];
+  $scope.gameRoomList = {};
   $scope.newGameRoomName = "";
   $scope.joinRoomAtCreate = true;
 
@@ -23,6 +23,7 @@ angular.module('hGApp', ['ngSails', 'ngCookies'])
         $window.location.href = '/game/'+response.id;
         return;
       }
+      response.players = [];
       $scope.gameRoomList.push(response);
       $scope.newGameRoomName = "";
     });
@@ -36,8 +37,10 @@ angular.module('hGApp', ['ngSails', 'ngCookies'])
 
   $sails.on('gameroom', function (message) {
     if (message.verb == "created") {
+      console.log("created!");
       $scope.gameRoomList.push(message.data);
     } else if (message.verb == "destroyed") {
+      console.log("destroyed!");
       angular.forEach($scope.gameRoomList, function(obj, index) {
         if (message.previous.id === obj.id) {
           $scope.gameRoomList.splice(index, 1);
@@ -45,6 +48,7 @@ angular.module('hGApp', ['ngSails', 'ngCookies'])
         }
       });
     } else if (message.verb == "updated") {
+      console.log("update!");
       if (message.data.active == true) {
         angular.forEach($scope.gameRoomList, function(obj, index) {
           if (message.id === obj.id) {
@@ -53,6 +57,33 @@ angular.module('hGApp', ['ngSails', 'ngCookies'])
           }
         });
       }
+    } else if (message.verb == "addedTo") {
+      console.log("addedTo");
+      if (message.attribute == "players") {
+        $sails.get('/player/'+message.addedId).success(function (response) {
+          var gameRoom = $scope.gameRoomList.filter(function (element) {
+            return element.id === message.id
+          })[0];
+          gameRoom.players.push(response);
+        });
+      }
+    } else if (message.verb == "removedFrom") {
+      console.log("removedFrom");
+      if (message.attribute == "players") {
+        var gameRoom = $scope.gameRoomList.filter(function (element) {
+            return element.id === message.id
+        })[0];
+        if (message.attribute == "players") {
+          angular.forEach(gameRoom.players, function(obj, index) {
+            if (message.removedId == obj.id) {
+              gameRoom.players.splice(index, 1);
+              return;
+            }
+          });
+        }
+      }
+    } else {
+      console.log("other message: " + message.verb);
     }
   });
 
@@ -67,30 +98,26 @@ angular.module('hGApp', ['ngSails', 'ngCookies'])
   $scope.waitingToStart = false;
   $scope.gameActive = false;
   $scope.tweetText = "No tweet";
-  gameRoomId = $(location).attr('pathname').substring(6,7);
-  socketId = "";
+  var gameRoomId = $(location).attr('pathname').substring(6,7);
+  var socketId = "";
   $scope.countdownToStart = 0;
-  countdownObject = null;
+  var countdownObject = null;
   
 
   $scope.joinRoom = function() {
-    if ($scope.player) {
-      $sails.post('/player/update/'+$scope.player.id, {name: $scope.username, guess: $scope.guess}).success(function (response) {
-        $scope.player = response;
-        $scope.guess = $scope.player.guess;
-        $scope.gameRoom.players[0].name = $scope.player.name;
-        $cookies.putObject('player', $scope.player);
-        $scope.hasUsername = true;
-      });
-    } else {
-      $sails.post('/player/create', {name : $scope.username, guess: $scope.guess, inGameRoom: $scope.gameRoom.id, socketId: socketId}).success(function (response) {
-        $scope.gameRoom.players.push(response);
-        $scope.player = response;
-        $scope.guess = $scope.player.guess;
-        $cookies.putObject('player', $scope.player);
-        $scope.hasUsername = true;
-      });
-    }
+    var newPlayer = {name : $scope.username, guess: $scope.guess, inGameRoom: $scope.gameRoom.id, socketId: socketId};
+    $sails.post('/player/create', newPlayer).success(function (response) {
+      $scope.gameRoom.players.push(response);
+      $scope.player = response;
+      $scope.guess = $scope.player.guess;
+      $cookies.putObject('player', $scope.player);
+      $scope.hasUsername = true;
+      if ($scope.gameRoom.destroyIfEmpty == false) {
+        $sails.post('/gameroom/update/'+$scope.gameRoom.id, {destroyIfEmpty: true}).success(function updateCB(response) {
+          $scope.gameRoom = response;
+        })
+      }
+    });
   };
 
   $scope.startGame = function() {
@@ -132,15 +159,12 @@ angular.module('hGApp', ['ngSails', 'ngCookies'])
 
   $sails.on('connect', function() {
     $sails.get('/game/init/'+gameRoomId).success(function (response) {
+      if (!response.players) {
+        response.players = []
+      }
       $scope.gameRoom = response.gameRoom;
       socketId = response.socketId;
-      if ($scope.gameRoom.players.length == 1) {
-        if ($scope.gameRoom.players[0].socketId == socketId) {
-          $scope.player = $scope.gameRoom.players[0];
-        }
-      }
     });
-    // $sails.get('/gameroom');
   });
 
   $sails.on('gameroom', function (message) {

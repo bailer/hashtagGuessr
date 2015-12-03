@@ -10,6 +10,23 @@
  * http://sailsjs.org/#!/documentation/reference/sails.config/sails.config.sockets.html
  */
 
+function removePlayer(socket) {
+  Player.findOne({socketId: socket.id}).populateAll().exec(function (err, foundPlayer) {
+    if (foundPlayer) {
+      Player.destroy(foundPlayer.id).exec(function (err) { 
+        Player.publishDestroy(foundPlayer.id, null, {previous: foundPlayer});
+        GameRoom.findOne(foundPlayer.inGameRoom.id).populateAll().exec(function (err, foundRoom) {
+          if (foundRoom && foundRoom.players.length == 0 && foundRoom.destroyIfEmpty) {
+            GameRoom.destroy(foundRoom.id).exec(function (err) {
+              GameRoom.publishDestroy(foundRoom.id, null, {previous: foundRoom});
+            });
+          }
+        });
+      });
+    }
+  });
+}
+
 module.exports.sockets = {
 
 
@@ -123,20 +140,7 @@ module.exports.sockets = {
   *                                                                          *
   ***************************************************************************/
   afterDisconnect: function(session, socket, cb) {
-    Player.findOne({socketId: socket.id}).populateAll().exec(function (err, foundPlayer) {
-      if (foundPlayer) {
-        Player.destroy(foundPlayer.id).exec(function (err) { 
-          Player.publishDestroy(foundPlayer.id, null, {previous: foundPlayer});
-          GameRoom.findOne(foundPlayer.inGameRoom.id).populateAll().exec(function (err, foundRoom) {
-            if (foundRoom && foundRoom.players.length == 0) {
-              GameRoom.destroy(foundRoom.id).exec(function (err) {
-                GameRoom.publishDestroy(foundRoom.id, null, {previous: foundRoom});
-              });
-            }
-          });
-        });
-      }
-    });
+    removePlayer(session);
     // By default: do nothing.
     return cb();
   },

@@ -1,10 +1,30 @@
 <div ng-controller="LobbyCtrl" ng-cloak>
   <div class="col-md-12">
-    <ul class="gameRoomlist" ng-model="gameRoomList">
-      <li class="gameRoomListItem" ng-repeat="gameRoom in gameRoomList">
-        <a href="/game/{{gameRoom.id}}">{{gameRoom.name}}</a>
-      </li>
-    </ul>
+    <table class="table table-striped table-hover gameRoomlist">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Room name</th>
+          <th>Number of players</th>
+          <th>Player names</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="gameRoomListItem" ng-repeat="gameRoom in gameRoomList">
+          <th scope="row">{{gameRoom.id}}</th>
+          <td><a href="/game/{{gameRoom.id}}">{{gameRoom.name}}</a></td>
+          <td>{{gameRoom.players.length}}</td>
+          <td>
+            <span ng-if="gameRoom.players.length" class="playerName" ng-repeat="player in gameRoom.players">
+              {{player.name}}<span ng-if="!$last">, </span>
+            </span>
+            <span ng-if="!gameRoom.players.length">
+              Room is empty
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <!-- Form for creating new game room  -->

@@ -27,6 +27,10 @@ module.exports = {
     active: {
       type: 'boolean',
       defaultsTo: 'false'
+    },
+    destroyIfEmpty: {
+      type: 'boolean',
+      defaultsTo: 'false'
     }
   },
 
