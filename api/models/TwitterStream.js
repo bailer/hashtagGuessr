@@ -17,7 +17,7 @@ var latestStartTime = 0;
 var timerObject = null;
 
 var timerFunc = function () {
-  if (removesToExecute.length > 0) {
+  if (Object.keys(waitingHashtags).length > 0) {
     var oldStream = currentStream;
     activeHashtags = clone(waitingHashtags);
     currentStream = TwitterObject.stream('statuses/filter', {track: Object.keys(activeHashtags)});
