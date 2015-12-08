@@ -18,18 +18,6 @@ module.exports = {
     });
   },
 
-  getOpenGameRooms: function(req, res) {
-    if (req.isSocket) {
-      GameRoom.find({active: false}).populateAll().exec(function findCB(err, found) {
-        GameRoom.watch(req);
-        GameRoom.subscribe(req, _.pluck(found, 'id'));
-        res.json(found);
-      });
-    } else {
-      res.badRequest("not a socket");
-    }
-  },
-
   initGameRoom: function (req, res) {
     if (req.isSocket) {
       gameRoomId = req.param('id');
