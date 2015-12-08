@@ -12,18 +12,27 @@ var lengtMessage = 'Must be at least ' + MinLength + ' characters but no longer 
 module.exports = {
 
   beforeValidate: function (values, cb) {
-    GameRoom.findOne(values.inGameRoom).populateAll().exec(function CB(err, found) {
-      if (found) {
-        values.gameRoomToJoin = found;
-      } else {
-        values.gameRoomToJoin = undefined;
-      }
+    if (values.inGameRoom) {
+      GameRoom.findOne(values.inGameRoom).populateAll().exec(function CB(err, found) {
+        if (found) {
+          values.gameRoomToJoin = found;
+        } else {
+          values.gameRoomToJoin = undefined;
+        }
+        cb();
+      });
+    } else {
       cb();
-    });
+    }
   },
 
   afterValidate: function (values, cb) {
-    delete values.gameRoomToJoin
+    if (values.gameRoomToJoin) {
+      delete values.gameRoomToJoin
+    }
+    if (values.guess) {
+      values.guess = "#"+values.guess;
+    }
     cb();
   },
 
@@ -56,7 +65,6 @@ module.exports = {
     },
     guess: {
       type: 'string',
-      defaultsTo: '#default',
       minLength: MinLength,
       maxLength: MaxLength,
       required: true,
@@ -74,6 +82,10 @@ module.exports = {
     score: {
       type: 'integer',
       defaultsTo: 0
+    },
+    ready: {
+      type: 'boolean',
+      defaultsTo: false,
     }
   },
 
