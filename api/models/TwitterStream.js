@@ -96,10 +96,6 @@ module.exports = {
   },
 
   track: function(gameRoom) {
-    if (!timerObject) {
-      // timerObject = setTimeout(timerFunc, timerInterval);
-      // latestStartTime = Date.now();
-    }
     var hashtags = [];
     gameRoom.players.forEach(function (o, i, a) {
       console.log("Adding hashtag " + o.guess + " for gameroom " + gameRoom.id);  
