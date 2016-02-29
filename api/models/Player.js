@@ -61,17 +61,18 @@ module.exports = {
       type: 'string',
       minLength: MinLength,
       maxLength: MaxLength,
+      unique: true,
       required: true,
     },
     guess: {
       type: 'string',
       minLength: MinLength,
       maxLength: MaxLength,
-      required: true,
+      required: false,
     },
     inGameRoom: {
       model: 'GameRoom',
-      required: true,
+      required: false,
       exist: true,
       notFull: true,
       notStarted: true,
@@ -93,6 +94,7 @@ module.exports = {
     name: {
       minLength: lengtMessage,
       maxLength: lengtMessage,
+      unique: "That username is currently not available",
       required: "Please provide a name"
     },
     guess: {

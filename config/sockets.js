@@ -9,9 +9,9 @@
  * For more information on sockets configuration, including advanced config options, see:
  * http://sailsjs.org/#!/documentation/reference/sails.config/sails.config.sockets.html
  */
-
+timerInterval = 30000;
 module.exports.sockets = {
-
+timeoutObjects: 5,
 
   /***************************************************************************
   *                                                                          *
@@ -44,7 +44,7 @@ module.exports.sockets = {
   // -OR-
   //
 
-  // adapter: 'redis',
+  // adapter: 'socket.io-redis',
   // host: '127.0.0.1',
   // port: 6379,
   // db: 'sails',
@@ -130,9 +130,11 @@ module.exports.sockets = {
             Player.publishDestroy(foundPlayer.id, null, {previous: foundPlayer});
             GameRoom.findOne(foundPlayer.inGameRoom.id).populateAll().exec(function (err, foundRoom) {
               if (foundRoom && foundRoom.players.length == 0 && foundRoom.destroyIfEmpty) {
-                GameRoom.destroy(foundRoom.id).exec(function (err) {
-                  GameRoom.publishDestroy(foundRoom.id, null, {previous: foundRoom});
-                });
+                timeoutObjects[foundRoom.id] = setTimeout(function () {
+                  GameRoom.destroy(foundRoom.id).exec(function (err) {
+                    GameRoom.publishDestroy(foundRoom.id, null, {previous: foundRoom});
+                  });
+                }, timerInterval);
               }
             });
           });

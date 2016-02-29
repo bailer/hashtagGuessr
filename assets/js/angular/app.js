@@ -1,36 +1,67 @@
-angular.module('hGApp', ['ngSails', 'ngCookies'])
-.controller('LobbyCtrl', ['$http', '$log', '$scope', '$sails', '$window', function($http, $log, $scope, $sails, $window) {
+angular.module('hGApp', ['sails.io', 'ngCookies', 'ngAnimate', 'ui.bootstrap'])
+.config(['$locationProvider', function($locationProvider) {
+  $locationProvider.html5Mode({
+    enabled: true,
+    requireBase: false
+  });
+}])
+.service('UserService', function($cookies, $sailsSocket, $window) {
 
-  // variable declarations
+  this.username = "";
 
-  $scope.predicate = '-id';
-  $scope.reverse = false;
-  $scope.gameRoomList = [];
-  $scope.newGameRoomName = "";
-  $scope.joinRoomAtCreate = false;
-  var disconnected = false;
+  this.getUsername = function() {
+    if (this.username == "")
+    var oldUsername = $cookies.getObject('username') || null;
+    if (oldUsername != null) {
+      this.username = oldUsername;
+    }
+    return this.username;
+  }
 
-  // function declarations
+  this.setUsername = function(username) {
+    this.username = username;
+    $cookies.putObject('username', this.username);
+  }
 
-  getGameRooms = function() {
-    $sails.get('/gameroom?active=false')
+  this.createPlayerInRoom = function(username, gameRoomId, callback) {
+    var newPlayer = {name : username, inGameRoom: gameRoomId};
+    $sailsSocket.post('/player/create', newPlayer)
     .success(function (response) {
-      $scope.gameRoomList = response;
+      callback(gameRoomId);
     })
     .error(function (response) {
       console.log(response);
     });
   };
 
+})
+.service('GameRoomService', function($sailsSocket, UserService) {
+  this.newCreatedGameRoom;
+})
+.controller('HeaderCtrl', function($http, $log, $rootScope, $scope, $sailsSocket, $cookies, $uibModal, $location, UserService, GameRoomService) {
+
+  $scope.username = UserService.getUsername();
+  $scope.joinRoomAtCreate = false;
+  $scope.newGameRoomName = "";
+  $scope.notInGame = false;
+
+  $scope.$watch(function() {
+    return UserService.username;
+  }, function(newVal, oldVal) {
+    if (newVal) {
+      $scope.username = newVal;
+    }
+  }, true);
+
   $scope.createNewGameRoom = function() {
-    $sails.post('/gameroom/create', {name: $scope.newGameRoomName})
+    $sailsSocket.post('/gameroom/create', {name: $scope.newGameRoomName})
     .success(function (response) {
-      if ($scope.joinRoomAtCreate) { 
-        $window.location.href = '/game/'+response.id;
+      if ($scope.joinRoomAtCreate) {
+        GameRoomService.joinRoom(response.id);
         return;
       }
       response.players = [];
-      $scope.gameRoomList.push(response);
+      GameRoomService.newCreatedGameRoom = response;
       $scope.newGameRoomName = "";
     })
     .error(function (response) {
@@ -38,24 +69,131 @@ angular.module('hGApp', ['ngSails', 'ngCookies'])
     });
   };
 
+  $scope.openUsernameModal = function (size, callback) {
+
+    var modalInstance = $uibModal.open({
+      animation: true,
+      templateUrl: 'usernameModal',
+      controller: 'ModalInstanceCtrl',
+      size: size,
+      resolve: {
+        username: function () {
+          return $scope.username;
+        }
+      }
+    });
+
+    modalInstance.result.then(function (username) {
+      if (username.length > 1) {
+        UserService.setUsername(username);
+        if (callback) {
+          callback();
+        }
+        return username;
+      }
+    }, function () {
+      $log.info('Modal dismissed at: ' + new Date());
+    });
+  };
+
+  if ($location.path().indexOf("game/") == -1) {
+    $scope.notInGame = true;
+  } 
+
+})
+.controller('LobbyCtrl', function($http, $log, $rootScope, $scope, $sailsSocket, $window, $uibModal, $cookies, UserService, GameRoomService) {
+
+  // variable declarations
+
+  $scope.predicate = '-id';
+  $scope.reverse = false;
+  $scope.gameRoomList = [];
+  var disconnected = false;
+
+  // function declarations
+
+  getGameRooms = function() {
+    $sailsSocket.get('/gameroom?active=false')
+    .success(function (response) {
+      $scope.gameRoomList = response;
+    })
+    .error(function (response) {
+      console.log(response);
+    });
+  }; 
+
+  redirectToRoom = function(gameRoomId) {
+    $window.location.href = 'game/'+gameRoomId;
+  }
+
+  $scope.joinRoom = function(id) {
+    username = UserService.getUsername();
+    if (username == "") {
+      $scope.openUsernameModal('md', function() { UserService.createPlayerInRoom(UserService.username, id, redirectToRoom(id)) });
+    } else {
+      UserService.createPlayerInRoom(UserService.username, id, redirectToRoom(id));
+    }
+  };
+
+  $scope.openUsernameModal = function (size, callback) {
+
+    var modalInstance = $uibModal.open({
+      animation: true,
+      templateUrl: 'usernameModal',
+      controller: 'ModalInstanceCtrl',
+      size: size,
+      resolve: {
+        username: function () {
+          return UserService.getUsername();
+        }
+      }
+    });
+
+    modalInstance.result.then(function (username) {
+      if (username.length > 1) {
+        UserService.setUsername(username);
+        if (callback) {
+          callback();
+        }
+        return username;
+      }
+    }, function () {
+      $log.info('Modal dismissed at: ' + new Date());
+    });
+  };
+
   // code to run
 
   window.onload = function () {
+    // oldUsername = $cookies.getObject('username') || null;
+    // if (oldUsername != null) {
+    //   $scope.username = oldUsername;
+    // }
     getGameRooms();
+    // console.log($scope.gameRoomList);
   }
 
-  $sails.on('connect', function() {
+  $scope.$watch(function() {
+    return GameRoomService.newCreatedGameRoom;
+  }, function(newVal, oldVal) {
+    if (newVal) {
+      $scope.gameRoomList.push(newVal);
+    }
+  }, true);
+
+
+  $sailsSocket.subscribe('connect', function() {
     if (disconnected) {
       getGameRooms();
       disconnected = false;
     }
   });
 
-  $sails.on('disconnect', function() {
+  $sailsSocket.subscribe('disconnect', function() {
     disconnected = true;
   })
 
-  $sails.on('gameroom', function (message) {
+  $sailsSocket.subscribe('gameroom', function (message) {
     if (message.verb == "created") {
       console.log("created!");
       $scope.gameRoomList.push(message.data);
@@ -80,7 +218,7 @@ angular.module('hGApp', ['ngSails', 'ngCookies'])
     } else if (message.verb == "addedTo") {
       console.log("addedTo");
       if (message.attribute == "players") {
-        $sails.get('/player/'+message.addedId)
+        $sailsSocket.get('/player/'+message.addedId)
         .success(function (response) {
           var gameRoom = $scope.gameRoomList.filter(function (element) {
             return element.id === message.id
@@ -109,78 +247,90 @@ angular.module('hGApp', ['ngSails', 'ngCookies'])
     }
   });
 
-}])
-.controller('GameRoomCtrl', ['$http', '$log', '$scope', '$sails', '$location', '$cookies', '$interval', function($http, $log, $scope, $sails, $location, $cookies, $interval) {
+  
 
+})
+.controller('GameRoomCtrl', function($http, $log, $scope, $sailsSocket, $location, $cookies, $interval, $uibModal) {
+  $scope.test = "HEJ";
   $scope.gameRoom = null;
   $scope.player = null;
   $scope.username == "";
   $scope.hasUsername = false;
-  $scope.guess = "";
   $scope.waitingToStart = false;
   $scope.gameActive = false;
   $scope.tweetText = "No tweet";
   $scope.playerReady = false;
-  var href = $(location).attr('pathname')
+  $scope.gameWinners = [];
+  var href = $location.path()
   var gameRoomId = href.substring(href.lastIndexOf('/')+1);
   var socketId = "";
   $scope.countdownToStart = 0;
   var countdownObject = null;
 
-  $scope.joinRoom = function() {
-    var newPlayer = {name : $scope.username, guess: $scope.guess, inGameRoom: $scope.gameRoom.id, socketId: socketId};
-    $sails.post('/player/create', newPlayer)
-    .success(function (response) {
-      $scope.gameRoom.players.push(response);
-      $scope.player = response;
-      $scope.guess = $scope.player.guess;
-      $cookies.putObject('player', $scope.player);
-      $scope.hasUsername = true;
-      if ($scope.gameRoom.destroyIfEmpty == false) {
-        $sails.post('/gameroom/update/'+$scope.gameRoom.id, {destroyIfEmpty: true})
-        .success(function updateCB(response) {
-          $scope.gameRoom = response;
-        })
-        .error(function (response) {
-          console.log(response);
-        });
-      }
-    })
-    .error(function (response) {
-      console.log(response);
-    });
-  };
+  // $scope.createPlayer = function() {
+  //   var newPlayer = {name : $scope.username, guess: $scope.guess, inGameRoom: $scope.gameRoom.id, socketId: socketId};
+  //   $sailsSocket.post('/player/create', newPlayer)
+  //   .success(function (response) {
+  //     $scope.gameRoom.players.push(response);
+  //     $scope.player = response;
+  //     $scope.guess = $scope.player.guess;
+  //     $cookies.putObject('player', $scope.player);
+  //     $scope.hasUsername = true;
+  //     if ($scope.gameRoom.destroyIfEmpty == false) {
+  //       $sailsSocket.post('/gameroom/update/'+$scope.gameRoom.id, {destroyIfEmpty: true})
+  //       .success(function updateCB(response) {
+  //         $scope.gameRoom = response;
+  //       })
+  //       .error(function (response) {
+  //         console.log(response);
+  //       });
+  //     }
+  //   })
+  //   .error(function (response) {
+  //     console.log(response);
+  //   });
+  // };
 
   $scope.ready = function() {
-    $sails.get('/game/ready/'+$scope.gameRoom.id+'/'+$scope.player.id+'/'+socketId)
+    // $scope.player.guess = "#"+$scope.guess;
+    $sailsSocket.get('/game/ready/'+$scope.gameRoom.id+'/'+$scope.player.guess)
     .success(function (response) {
     })
     .error(function (response) {
+      console.log("Error while readying");
       console.log(response);
     });
     $scope.playerReady = true;
   }
 
   window.onload = function () {
-    oldPlayer = $cookies.getObject('player') || null;
-    if (oldPlayer != null) {
-      $scope.username = oldPlayer.name;
-    }
-    $sails.get('/game/init/'+gameRoomId)
+    // oldUsername = $cookies.getObject('username') || null;
+    // if (oldUsername != null) {
+    //   $scope.username = oldUsername;
+    // }
+    $sailsSocket.get('/game/init/'+gameRoomId)
       .success(function (response) {
-        if (!response.players) {
-          response.players = []
+        console.log("test");
+        if (!response.gameRoom.players) {
+          response.gameRom.players = []
         }
+        // if (response.playerId) {
+        //   for (i = 0; i < response.gameRoom.players.length; i++) {
+        //     if (response.gameRoom.players[i].id == response.playerId) {
+        //       $scope.player = response.gameRoom.players[i];
+        //       console.log($scope.player.id);
+        //     }
+        //   }
+        // }
         $scope.gameRoom = response.gameRoom;
-        socketId = response.socketId;
+        $scope.player = response.player;
       })
       .error(function (response) {
         console.log(response);
       });
   };
 
-  $sails.on('countdownToStart', function(data) {
-    console.log(Date.now());
+  $sailsSocket.subscribe('countdownToStart', function(data) {
     $scope.countdownToStart = Math.round((data.interval-(Date.now()-data.latestStartTime))/1000);
     $scope.waitingToStart = true;
     countdownObject = $interval(function () {
@@ -193,20 +343,31 @@ angular.module('hGApp', ['ngSails', 'ngCookies'])
     }, 1000);
   });
 
-  $sails.on('gameStarted', function () {
+  $sailsSocket.subscribe('gameStarted', function () {
     $scope.waitingToStart = false;
     $scope.gameActive = true;
   });
 
-  $sails.on('newTweet', function(data) {
-    $scope.player.score++;
-    $scope.tweetText = data.text;
+  $sailsSocket.subscribe('newTweet', function (data) {
+    for (var i in data.players) {
+      var player = $scope.gameRoom.players.filter(function (element) {
+        return element.id == data.players[i]
+      })[0];
+      player.score++;
+      player.latestTweet = data.tweet.text;
+    }
   });
 
-  $sails.on('gameroom', function (message) {
+  $sailsSocket.subscribe('gameOver', function (data) {
+    console.log("gameOver");
+    console.log(data);
+    $scope.gameWinners = data.winners;
+  });
+
+  $sailsSocket.subscribe('gameroom', function (message) {
     if (message.verb == "addedTo") {
       if (message.attribute == "players") {
-        $sails.get('/player/'+message.addedId).success(function (response) {
+        $sailsSocket.get('/player/'+message.addedId).success(function (response) {
           $scope.gameRoom.players.push(response);
         });
       }
@@ -223,4 +384,16 @@ angular.module('hGApp', ['ngSails', 'ngCookies'])
       }
     }
   });
-}]);
+})
+.controller('ModalInstanceCtrl', function ($scope, $uibModalInstance, username) {
+
+  $scope.username = username;
+
+  $scope.ok = function () {
+    $uibModalInstance.close($scope.username);
+  };
+
+  $scope.cancel = function () {
+    $uibModalInstance.dismiss('cancel');
+  };
+});
