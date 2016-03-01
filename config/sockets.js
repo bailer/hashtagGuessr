@@ -9,9 +9,8 @@
  * For more information on sockets configuration, including advanced config options, see:
  * http://sailsjs.org/#!/documentation/reference/sails.config/sails.config.sockets.html
  */
-timerInterval = 30000;
+
 module.exports.sockets = {
-timeoutObjects: 5,
 
   /***************************************************************************
   *                                                                          *
@@ -124,22 +123,22 @@ timeoutObjects: 5,
   ***************************************************************************/
   afterDisconnect: function(session, socket, cb) {
     if (socket.id) {
-      Player.findOne({socketId: socket.id}).populateAll().exec(function (err, foundPlayer) {
-        if (foundPlayer) {
-          Player.destroy(foundPlayer.id).exec(function (err) { 
-            Player.publishDestroy(foundPlayer.id, null, {previous: foundPlayer});
-            GameRoom.findOne(foundPlayer.inGameRoom.id).populateAll().exec(function (err, foundRoom) {
-              if (foundRoom && foundRoom.players.length == 0 && foundRoom.destroyIfEmpty) {
-                timeoutObjects[foundRoom.id] = setTimeout(function () {
-                  GameRoom.destroy(foundRoom.id).exec(function (err) {
-                    GameRoom.publishDestroy(foundRoom.id, null, {previous: foundRoom});
-                  });
-                }, timerInterval);
-              }
-            });
+          Player.destroy({socketId: socket.id}).exec(function (err, destroyed) { 
+            if (destroyed[0]) {
+              Player.publishDestroy(destroyed[0].id, null, {previous: destroyed[0]});
+              GameRoom.findOne(destroyed[0].inGameRoom).populateAll().exec(function (err, foundRoom) {
+                if (foundRoom && foundRoom.players.length == 0) {
+                    SocketHelper.addGameRoomTimer(foundRoom.id, setTimeout(function (gameRoom) {
+                    GameRoom.destroy(gameRoom.id).exec(function (err) {
+                      GameRoom.publishDestroy(gameRoom.id, null, {previous: gameRoom});
+                    });
+                  }, 5000, foundRoom));
+                }
+              });
+            }
           });
-        }
-      });
+      //   }
+      // });
     }
     // By default: do nothing.
     return cb();

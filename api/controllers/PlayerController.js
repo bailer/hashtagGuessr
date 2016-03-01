@@ -15,10 +15,10 @@ module.exports = {
         Player.introduce(newInstance);
       }
       Player.publishCreate(newInstance, !req.options.mirror && req);
-      console.log("in user create, session id: " + req.session.id);
-      console.log("in user create, newinstanceID " + newInstance.id);
+      // console.log("in user create, session id: " + req.session.id);
+      // console.log("in user create, newinstanceID " + newInstance.id);
       req.session.userId = newInstance.id;
-      console.log("in user create, User session id: " + req.session.userId);
+      // console.log("in user create, User session id: " + req.session.userId);
       res.created(newInstance);
     });
   }
