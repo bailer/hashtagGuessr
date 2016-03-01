@@ -41,6 +41,9 @@ module.exports.routes = {
   '/game/ready/:gameRoomId/:guess' : 'GameRoomController.playerReady',
   '/usernameModal': {
     view: 'usernameModal'
+  },
+  '/about': {
+    view: 'about'
   }
 
   /***************************************************************************
