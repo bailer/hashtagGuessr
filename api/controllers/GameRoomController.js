@@ -21,23 +21,19 @@ module.exports = {
   initGameRoom: function (req, res) {
     if (req.isSocket) {
       gameRoomId = req.param('id');
-      console.log(sails.sockets.timeoutObjects);
-      // timeoutObject = sails.sockets.timeoutObjects[gameRoomId]
-      // if (timeoutObject) {
-      //   clearTimeout(timeoutObject);
-      // }
-      console.log("in init gameroom "+req.session.id);
-      console.log("in init gameroom " + req.session.userId);
+      timeoutObject = SocketHelper.clearGameRoomTimer(gameRoomId);
+      // console.log("in init gameroom "+req.session.id);
+      // console.log("session userid in init " + req.session.userId);
       GameRoom.findOne(gameRoomId).populateAll().exec(function (err, found) {
         if (found) {
           GameRoom.subscribe(req, found.id);
           if (req.session.userId) {
-            console.log("has user id");
-            console.log("socket:");
-            console.log(req.socket.id);
+            // console.log("has user id");
+            // console.log("socket:");
+            // console.log(req.socket.id);
             Player.update(req.session.userId, {socketId: req.socket.id}).exec(function (err, updated) {
-              console.log("updated?");
-              console.log(updated);
+              // console.log("updated?");
+              // console.log(updated);
               if (err) {
                 console.log("error");
                 console.log(err)
