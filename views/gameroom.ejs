@@ -1,27 +1,56 @@
-<div ng-controller="GameRoomCtrl" ng-cloak>
+<% include header %>
+
+<div ng-controller="GameRoomCtrl" ng-cloak class="container">
+  <!-- header and username input row -->
+  <div class="row gameRoomTopRow">
+    <div class="col-lg-2 col-lg-offset-5 col-md-12 col-xs-12 text-center">
+      <h1>{{gameRoom.name}}</h1>
+      <div ng-show="waitingToStart">
+        {{countdownToStart}}
+      </div>
+      <div ng-if="gameWinners.length == 1">
+        Winner of the game is:
+      </div>
+      <div ng-if="gameWinners.length > 1">
+        Winners of the game is:
+      </div>
+      <div ng-repeat="currentPlayer in gameWinners">
+        {{currentPlayer.name}}
+      </div>
+      <br>
+    </div>
+  </div>
+  <!-- player row -->
+  <div class="row player">
+    <div ng-repeat="currentPlayer in gameRoom.players" class="text-center" ng-class="{'col-lg-4 col-lg-offset-4 col-md-4 col-md-offset-4 col-xs-10 col-xs-offset-1': gameRoom.players.length < 2, 'col-lg-6 col-md-6 col-xs-12': gameRoom.players.length > 1}">
+      {{currentPlayer.name}}
+      <br>
+      <div ng-if="currentPlayer.id == player.id">
+        <form ng-if="!playerReady">
+          <div class="form-group" class="">
+            <label class="" for="guess">Guess</label>
+            <div class="input-group">
+              <span class="input-group-addon" id="hashtag-addon">#</span>
+              <input type="text" id="guess" class="form-control" aria-describedby="hashtag-addon" ng-model="player.guess">
+            </div>
+          </div>
+          <button class="btn btn-default" ng-click="ready()">Ready</button>
+        </form>
+        <div ng-if="playerReady">
+          {{currentPlayer.guess}}
+        </div>
+      </div>
+      <div ng-show="gameActive">
+        Score: {{currentPlayer.score}}
+        <br>
+        Latest tweet: {{currentPlayer.latestTweet}}
+      </div>
+      <br>
+    </div>
+  </div>
+  <!-- <div ng-show="hasUsername">{{username}}</div> -->
+  <!-- stuff under the players -->
   <div class="row">
-    <div class="col-lg-12 col-md-12 col-sm-12">
-      <form ng-hide="hasUsername">
-        <input type="text" ng-model="username">
-        <input type="text" ng-model="guess">
-        <button class="btn btn-default" ng-click="joinRoom()">Save</button>
-      </form>
-      <div ng-show="hasUsername">{{username}}</div>
-      <button class="btn btn-default" ng-click="startGame()">Start Game</button>
-    </div>
-  </div>
-  {{gameRoom.name}} {{gameRoom.players.length}} players <br>
-  <div ng-show="waitingToStart">
-    {{countdownToStart}}
-  </div>
-  <div ng-show="gameActive">
-    {{player.score}} <br>
-    {{tweetText}}
-  </div>
-  <div class="row" ng-show="gameRoom">
-    <div class="col-lg-6 col-md-6 col-sm-12 player1">
-    </div>
-    <div class="col-lg-6 col-md-6 col-sm-12 player2">
-    </div>
-  </div>
+    
+  </div
 </div>

@@ -17,29 +17,27 @@ var latestStartTime = 0;
 var timerObject = null;
 
 var timerFunc = function () {
-  if (removesToExecute.length > 0) {
+  if (Object.keys(waitingHashtags).length > 0) {
     var oldStream = currentStream;
     activeHashtags = clone(waitingHashtags);
     currentStream = TwitterObject.stream('statuses/filter', {track: Object.keys(activeHashtags)});
 
     currentStream.on('tweet', function (tweet) {
       if (!tweet.retweeted) {
-        var gameRoomsToPing = [];
-        for (var oKey in activeHashtags) {
-          for (var iKey in tweet.entities.hashtags) {
-            if (oKey === '#' + tweet.entities.hashtags[iKey].text) {
-              activeHashtags[oKey].forEach(function (o, i, a) {
-                gameRoomsToPing[o] = o;
-              });
-              break;
-            }
+        hashtags = tweet.entities.hashtags;
+        for (var hashtagI in hashtags) {
+          // console.log(hashtags[hashtagI].text);
+          var gameRooms = activeHashtags["#"+hashtags[hashtagI].text]
+          for (var gameRoom in gameRooms) {
+            Player.find(gameRooms[gameRoom].players).exec(function findCB(err, found) {
+              for (var i = 0; i < found.length; i++) {
+                Player.update(found[i].id,{score: found[i].score+1}).exec(function (err, updated) {
+                });
+              }
+            });
+            sails.sockets.broadcast('gameRoom'+gameRoom, 'newTweet', {players: gameRooms[gameRoom].players, tweet: tweet});
           }
         }
-        gameRoomsToPing.forEach(function (o, i, a) {
-          console.log("Pinging: " + o);
-          sails.sockets.broadcast('gameRoom'+o, 'newTweet', tweet);
-        });
-        // console.log(tweet.text);
       }
     });
     currentStream.on('limit', function (msg) {
@@ -78,7 +76,7 @@ var timerFunc = function () {
       // console.log(response);
       // console.log(connectInterval);
     });
-    console.log(Date.now()-latestStartTime);
+    // console.log(Date.now()-latestStartTime);
   }
 }
 
@@ -96,30 +94,54 @@ module.exports = {
   },
 
   track: function(gameRoom) {
-    if (!timerObject) {
-      // timerObject = setTimeout(timerFunc, timerInterval);
-      // latestStartTime = Date.now();
-    }
     var hashtags = [];
     gameRoom.players.forEach(function (o, i, a) {
-      console.log("Adding hashtag " + o.guess + " for gameroom " + gameRoom.id);  
+      console.log("Adding hashtag " + o.guess + " for gameroom " + gameRoom.id + " for player " + o.name);
       var currentGameRoomsForGuess = waitingHashtags[o.guess];
       if (currentGameRoomsForGuess) {
-        currentGameRoomsForGuess.push(gameRoom.id);
+        if (currentGameRoomsForGuess[gameRoom.id]) {
+          currentGameRoomsForGuess[gameRoom.id].players.push(o.id);
+        } else {
+          currentGameRoomsForGuess[gameRoom.id] = {players: [o.id]};
+        }
       } else {
-        waitingHashtags[o.guess] = [gameRoom.id];
+        waitingHashtags[o.guess] = {};
+        waitingHashtags[o.guess][gameRoom.id] = {players: [o.id]}
       }
       hashtags.push(o.guess);
     });
     // console.log(JSON.stringify(activeHashtags, null, 4));
     removesToExecute.push({func: function (hashtagsToRemove, gameRoomIdToRemove) {
+      Player.find().where({inGameRoom: gameRoomIdToRemove}).exec(function (err, found) {
+        if (found.length > 0) {
+          highestScoringPlayers = [];
+          for (var i in found) {
+            if (highestScoringPlayers.length > 0) {
+              if (found[i].score > highestScoringPlayers[0].score) {
+                console.log("Replacing winner with " + found[i].name);
+                highestScoringPlayers[0] = found[i];
+              } else if (found[i].score === highestScoringPlayers[0].score) {
+                console.log("Adding " + found[i].name + " to winners");
+                highestScoringPlayers.push(found[i]);
+              }
+            } else {
+              console.log("Setting " + found[i].name + " as winner");
+              highestScoringPlayers.push(found[i]);
+            }
+          }
+          console.log(highestScoringPlayers);
+          var socketRoom = 'gameRoom'+gameRoomIdToRemove;
+          console.log("sending to socketroom " + socketRoom);
+          sails.sockets.broadcast(socketRoom, 'gameOver', {winners: highestScoringPlayers});
+        }
+      });
       hashtagsToRemove.forEach(function (o, i, a) {
         console.log("Removing hashtag " + o + " for gameroom " + gameRoomIdToRemove);
         gameRooms = waitingHashtags[o];
-        if (gameRooms.length > 1) {
+        if (Object.keys(gameRooms).length > 1) {
           for (var key in gameRooms) {
-            if (gameRooms[key] === gameRoomIdToRemove) {
-              gameRooms.splice(i, 1);
+            if (key == gameRoomIdToRemove) {
+              delete gameRooms[key];
             }
           }
         } else {

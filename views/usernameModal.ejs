@@ -1,0 +1,16 @@
+<div class="modal-header">
+  <h3 class="modal-title">Please chose a username</h3>
+</div>
+<div class="modal-body">
+  <form class="userCreation">
+    <div class="form-group">
+      <label class="" for="username">Username</label>
+      <input type="text" placeholder="guessMastah" id="username" class="form-control" ng-model="username" autofocus>
+      <button class="hide" ng-click="ok()">OK</button>
+    </div>
+  </form>
+</div>
+<div class="modal-footer">
+  <button class="btn btn-primary" type="button" ng-click="ok()">OK</button>
+  <button class="btn btn-warning" type="button" ng-click="cancel()">Cancel</button>
+</div>

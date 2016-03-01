@@ -11,7 +11,6 @@ module.exports = {
     GameRoom.findOne(gameRoomId).exec(function (err, found) {
       // will have to add support for reconnection here
       if (found && !found.active) {
-        console.log("served gameroom " + gameRoomId);
         return res.view('gameroom');
       } else {
           res.notFound();
@@ -19,72 +18,85 @@ module.exports = {
     });
   },
 
-  getOpenGameRooms: function(req, res) {
-    GameRoom.find({active: false}).populateAll().exec(function findCB(err, found) {
-      if (req.isSocket) {
-        GameRoom.watch(req);
-      }
-      res.json(found);
-    })
-  },
-
-  // socket init
   initGameRoom: function (req, res) {
     if (req.isSocket) {
       gameRoomId = req.param('id');
-      // console.log("Serving gameroom" + gameRoomId);
+      timeoutObject = SocketHelper.clearGameRoomTimer(gameRoomId);
+      // console.log("in init gameroom "+req.session.id);
+      // console.log("session userid in init " + req.session.userId);
       GameRoom.findOne(gameRoomId).populateAll().exec(function (err, found) {
         if (found) {
           GameRoom.subscribe(req, found.id);
-          // console.log("Found: %j", found);
-          if (found.players.length == 0) {
-            // console.log("Creating new player");
-            found.players.add({socketId: req.socket.id});
-            found.save(function (err, result) {
+          if (req.session.userId) {
+            // console.log("has user id");
+            // console.log("socket:");
+            // console.log(req.socket.id);
+            Player.update(req.session.userId, {socketId: req.socket.id}).exec(function (err, updated) {
+              // console.log("updated?");
+              // console.log(updated);
               if (err) {
-                console.log(err);
-              } else {
-                return res.json({gameRoom: result, socketId: req.socket.id});
+                console.log("error");
+                console.log(err)
+              } else if (updated[0]) {
+                return res.json({gameRoom: found, player: updated[0]});
               }
-            });
-            // Player.create({inGameRoom: gameRoomId, socketId: req.socket.id}, function (err, created) {
-            //   res.json(response);
-            // });
+            })
           } else {
             return res.json({gameRoom: found, socketId: req.socket.id});
           }
+        } else {
+          return res.badRequest("room does not exist");
         }
       });
+    } else {
+      return res.badRequest("not a socket");
     }
   },
 
-  startGame: function(req, res) {
-    gameRoomId = req.param('id');
-    socketRoom = 'gameRoom'+gameRoomId;
-    players = [];
-    GameRoom.findOne(gameRoomId).populateAll().exec(function (err, found) {
-      if (found) {
-        found.players.forEach(function (o, i, a) {
-          sails.sockets.join(o.socketId, socketRoom);
-          sails.sockets.join(o.socketId, "waitingGameRooms");
-          players.push(o);
-          GameRoom.update(found.id,{active: true}).exec(function afterwards(err, updated) {
-            if (err) {
-              console.log("couldn't set gameroom " + found.id + "to active");
-            } else {
-              GameRoom.publishUpdate(found.id,{active: true});
-              console.log("updated gameroom " + found.id);
+  playerReady: function(req, res) {
+    console.log("READY!");
+    if (req.isSocket) {
+      gameRoomId = req.param('gameRoomId');
+      guess = req.param('guess');
+      playerId = req.session.userId;
+      socketId = req.socket.id;
+      socketRoom = 'gameRoom'+gameRoomId;
+      console.log("joining socketroom: " + socketRoom + " with socket: " + socketId + " for player: " + playerId);
+      Player.update(playerId, {ready: true, guess: guess}).exec(function (err, updated) {
+        if (updated[0]) {
+          Player.publishUpdate(updated[0].id, updated[0]);
+          sails.sockets.join(socketId, socketRoom);
+          sails.sockets.join(socketId, "waitingGameRooms");
+          GameRoom.findOne(gameRoomId).populateAll().exec(function (err, found) {
+            if (found) {
+              var allReady = true;
+              for (var i = 0; i < found.players.length; i++) {
+                if (found.players[i].ready == false) {
+                  allReady = false;
+                  break;
+                }
+              }
+              if (allReady) {
+                GameRoom.update(found.id,{active: true}).exec(function afterwards(err, updated) {
+                  if (updated[0]) {
+                    GameRoom.publishUpdate(updated[0].id, updated[0]);
+                    // var subscribers = GameRoom.subscribers(updated[0].id);
+                    // _.each(subscribers, function(subscriber) {
+                    //   GameRoom.unsubscribe(subscriber, updated[0].id);
+                    // });
+                    var toSend = TwitterStream.track(found);
+                    sails.sockets.broadcast(socketRoom, "countdownToStart", toSend);
+                  }
+                });
+              }
             }
           });
-        });
-        var toSend = TwitterStream.track(found);
-        return res.json(toSend);
-        // setTimeout(function () {
-        //   TwitterStream.track(found, res);
-        // }, 30000);
-      }
-    });
-    // return res.ok();
+        }
+      });
+      return res.ok();
+    } else {
+      return res.badRequest("not a socket");
+    }
   }
 };
 

@@ -12,7 +12,6 @@
 
 module.exports.sockets = {
 
-
   /***************************************************************************
   *                                                                          *
   * Node.js (and consequently Sails.js) apps scale horizontally. It's a      *
@@ -44,7 +43,7 @@ module.exports.sockets = {
   // -OR-
   //
 
-  // adapter: 'redis',
+  // adapter: 'socket.io-redis',
   // host: '127.0.0.1',
   // port: 6379,
   // db: 'sails',
@@ -123,20 +122,24 @@ module.exports.sockets = {
   *                                                                          *
   ***************************************************************************/
   afterDisconnect: function(session, socket, cb) {
-    Player.findOne({socketId: socket.id}).populateAll().exec(function (err, foundPlayer) {
-      if (foundPlayer) {
-        Player.destroy(foundPlayer.id).exec(function (err) { 
-          Player.publishDestroy(foundPlayer.id, null, {previous: foundPlayer});
-          GameRoom.findOne(foundPlayer.inGameRoom.id).populateAll().exec(function (err, foundRoom) {
-            if (foundRoom && foundRoom.players.length == 0) {
-              GameRoom.destroy(foundRoom.id).exec(function (err) {
-                GameRoom.publishDestroy(foundRoom.id, null, {previous: foundRoom});
+    if (socket.id) {
+          Player.destroy({socketId: socket.id}).exec(function (err, destroyed) { 
+            if (destroyed[0]) {
+              Player.publishDestroy(destroyed[0].id, null, {previous: destroyed[0]});
+              GameRoom.findOne(destroyed[0].inGameRoom).populateAll().exec(function (err, foundRoom) {
+                if (foundRoom && foundRoom.players.length == 0) {
+                    SocketHelper.addGameRoomTimer(foundRoom.id, setTimeout(function (gameRoom) {
+                    GameRoom.destroy(gameRoom.id).exec(function (err) {
+                      GameRoom.publishDestroy(gameRoom.id, null, {previous: gameRoom});
+                    });
+                  }, 5000, foundRoom));
+                }
               });
             }
           });
-        });
-      }
-    });
+      //   }
+      // });
+    }
     // By default: do nothing.
     return cb();
   },

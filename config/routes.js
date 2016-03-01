@@ -38,7 +38,13 @@ module.exports.routes = {
   '/game/:id' : 'GameRoomController.serveGameRoom',
   // '/socket': 'TestController.socket',
   '/game/init/:id' : 'GameRoomController.initGameRoom',
-  '/game/start/:id' : 'GameRoomController.startGame'
+  '/game/ready/:gameRoomId/:guess' : 'GameRoomController.playerReady',
+  '/usernameModal': {
+    view: 'usernameModal'
+  },
+  '/about': {
+    view: 'about'
+  }
 
   /***************************************************************************
   *                                                                          *
