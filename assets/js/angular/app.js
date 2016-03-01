@@ -27,7 +27,7 @@ angular.module('hGApp', ['sails.io', 'ngCookies', 'ngAnimate', 'ui.bootstrap'])
     var newPlayer = {name : username, inGameRoom: gameRoomId};
     $sailsSocket.post('/player/create', newPlayer)
     .success(function (response) {
-      callback(gameRoomId);
+      callback;
     })
     .error(function (response) {
       console.log(response);
@@ -57,7 +57,7 @@ angular.module('hGApp', ['sails.io', 'ngCookies', 'ngAnimate', 'ui.bootstrap'])
     $sailsSocket.post('/gameroom/create', {name: $scope.newGameRoomName})
     .success(function (response) {
       if ($scope.joinRoomAtCreate) {
-        GameRoomService.joinRoom(response.id);
+        $scope.joinRoom(response.id);
         return;
       }
       response.players = [];
@@ -69,11 +69,40 @@ angular.module('hGApp', ['sails.io', 'ngCookies', 'ngAnimate', 'ui.bootstrap'])
     });
   };
 
+  redirectToRoom = function(gameRoomId) {
+    $window.location.href = 'game/'+gameRoomId;
+  }
+
+  $scope.joinRoom = function(id) {
+    username = UserService.getUsername();
+    if (username == "") {
+      $scope.openUsernameModal('md', function() { UserService.createPlayerInRoom(UserService.username, id, redirectToRoom(id)) });
+    } else {
+      UserService.createPlayerInRoom(UserService.username, id, redirectToRoom(id));
+    }
+  };
+
+  $scope.openAboutModal = function (size) {
+
+    var modalInstance = $uibModal.open({
+      animation: true,
+      templateUrl: '/about',
+      controller: 'ModalAboutCtrl',
+      size: size
+      });
+
+    modalInstance.result.then(function () {
+    }, function () {
+      $log.info('Modal dismissed at: ' + new Date());
+    });
+  };
+
+
   $scope.openUsernameModal = function (size, callback) {
 
     var modalInstance = $uibModal.open({
       animation: true,
-      templateUrl: 'usernameModal',
+      templateUrl: '/usernameModal',
       controller: 'ModalInstanceCtrl',
       size: size,
       resolve: {
@@ -196,6 +225,9 @@ angular.module('hGApp', ['sails.io', 'ngCookies', 'ngAnimate', 'ui.bootstrap'])
   $sailsSocket.subscribe('gameroom', function (message) {
     if (message.verb == "created") {
       console.log("created!");
+      if (!message.data.players) {
+        message.data.players = [];
+      }
       $scope.gameRoomList.push(message.data);
     } else if (message.verb == "destroyed") {
       console.log("destroyed!");
@@ -310,7 +342,6 @@ angular.module('hGApp', ['sails.io', 'ngCookies', 'ngAnimate', 'ui.bootstrap'])
     // }
     $sailsSocket.get('/game/init/'+gameRoomId)
       .success(function (response) {
-        console.log("test");
         if (!response.gameRoom.players) {
           response.gameRom.players = []
         }
@@ -395,5 +426,10 @@ angular.module('hGApp', ['sails.io', 'ngCookies', 'ngAnimate', 'ui.bootstrap'])
 
   $scope.cancel = function () {
     $uibModalInstance.dismiss('cancel');
+  };
+})
+.controller('ModalAboutCtrl', function ($scope, $uibModalInstance) {
+  $scope.ok = function () {
+    $uibModalInstance.close($scope.username);
   };
 });
