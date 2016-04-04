@@ -1,3 +1,6 @@
+.ng-cloak {
+  display:none;
+}
 .gameRoomContainer {
   padding-top:50px;
 }
